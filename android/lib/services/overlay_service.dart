@@ -1,17 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'dart:ui';
 
 class OverlayService {
   static bool _isRunning = false;
+  static OverlayEntry? _overlayEntry;
+  static String _virtualTime = '--:--';
+  static double _speed = 1.0;
+  static Offset _position = const Offset(10, 50);
   
   static Future<void> requestPermission() async {
-    await FlutterOverlayWindow.requestPermission();
+    debugPrint('In-app overlay does not require permission');
   }
   
   static Future<bool> hasPermission() async {
-    return await FlutterOverlayWindow.isPermissionGranted();
+    return true;
+  }
+  
+  static void showOverlayGlobal(BuildContext context, {
+    String virtualTime = '--:--',
+    double speed = 1.0,
+  }) {
+    _virtualTime = virtualTime;
+    _speed = speed;
+    
+    if (_isRunning) {
+      updateOverlayGlobal(virtualTime: virtualTime, speed: speed);
+      return;
+    }
+    
+    _overlayEntry = OverlayEntry(
+      builder: (context) => _FloatingTimeWidget(
+        initialPosition: _position,
+        virtualTime: _virtualTime,
+        speed: _speed,
+        onPositionChanged: (newPosition) {
+          _position = newPosition;
+        },
+        onUpdateTime: (newTime, newSpeed) {
+          _virtualTime = newTime;
+          _speed = newSpeed;
+        },
+      ),
+    );
+    
+    Overlay.of(context).insert(_overlayEntry!);
+    _isRunning = true;
+  }
+  
+  static void updateOverlayGlobal({
+    String? virtualTime,
+    double? speed,
+  }) {
+    if (!_isRunning || _overlayEntry == null) return;
+    
+    if (virtualTime != null) _virtualTime = virtualTime;
+    if (speed != null) _speed = speed;
+    
+    _overlayEntry!.markNeedsBuild();
+  }
+  
+  static void hideOverlayGlobal() {
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove();
+      _overlayEntry = null;
+    }
+    _isRunning = false;
   }
   
   static Future<void> showOverlay({
@@ -22,29 +76,10 @@ class OverlayService {
     double fontSize = 24,
     double opacity = 1.0,
   }) async {
-    if (!await hasPermission()) {
-      debugPrint('Overlay permission not granted');
-      return;
-    }
-    
-    await FlutterOverlayWindow.showOverlay(
-      height: 60,
-      width: 120,
-      alignment: OverlayAlignment.topLeft,
-      enableDrag: true,
-      positionGravity: PositionGravity.left,
-    );
-    
-    await FlutterOverlayWindow.shareData({
-      'virtualTime': virtualTime,
-      'speed': speed,
-      'bgColor': bgColor,
-      'textColor': textColor,
-      'fontSize': fontSize,
-      'opacity': opacity,
-    });
-    
+    _virtualTime = virtualTime;
+    _speed = speed;
     _isRunning = true;
+    debugPrint('Overlay ready: $virtualTime');
   }
   
   static Future<void> updateOverlay({
@@ -55,97 +90,174 @@ class OverlayService {
     double? fontSize,
     double? opacity,
   }) async {
-    if (!_isRunning) return;
-    
-    await FlutterOverlayWindow.shareData({
-      'virtualTime': virtualTime,
-      'speed': speed,
-      'bgColor': bgColor,
-      'textColor': textColor,
-      'fontSize': fontSize,
-      'opacity': opacity,
-    });
+    if (virtualTime != null) _virtualTime = virtualTime;
+    if (speed != null) _speed = speed;
   }
   
   static Future<void> hideOverlay() async {
-    await FlutterOverlayWindow.closeOverlay();
     _isRunning = false;
   }
   
   static bool get isRunning => _isRunning;
+  static String get virtualTime => _virtualTime;
+  static double get speed => _speed;
 }
 
-@pragma("vm:entry-point")
-void overlayMain() {
-  WidgetsFlutterBinding.ensureInitialized();
+class _FloatingTimeWidget extends StatefulWidget {
+  final Offset initialPosition;
+  final String virtualTime;
+  final double speed;
+  final Function(Offset) onPositionChanged;
+  final Function(String, double) onUpdateTime;
   
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Material(
-        color: Colors.transparent,
-        child: OverlayWidget(),
-      ),
-    ),
-  );
-}
-
-class OverlayWidget extends StatefulWidget {
-  const OverlayWidget({super.key});
-
+  const _FloatingTimeWidget({
+    required this.initialPosition,
+    required this.virtualTime,
+    required this.speed,
+    required this.onPositionChanged,
+    required this.onUpdateTime,
+  });
+  
   @override
-  State<OverlayWidget> createState() => _OverlayWidgetState();
+  State<_FloatingTimeWidget> createState() => _FloatingTimeWidgetState();
 }
 
-class _OverlayWidgetState extends State<OverlayWidget> {
+class _FloatingTimeWidgetState extends State<_FloatingTimeWidget> {
+  late Offset _position;
   String _virtualTime = '--:--';
   double _speed = 1.0;
-  String _bgColor = '#000000';
-  String _textColor = '#FFFFFF';
-  double _fontSize = 24;
-  double _opacity = 1.0;
   
   @override
   void initState() {
     super.initState();
-    FlutterOverlayWindow.overlayListener.listen((data) {
-      setState(() {
-        _virtualTime = data?['virtualTime'] ?? '--:--';
-        _speed = data?['speed'] ?? 1.0;
-        _bgColor = data?['bgColor'] ?? '#000000';
-        _textColor = data?['textColor'] ?? '#FFFFFF';
-        _fontSize = data?['fontSize'] ?? 24.0;
-        _opacity = data?['opacity'] ?? 1.0;
-      });
-    });
+    _position = widget.initialPosition;
+    _virtualTime = widget.virtualTime;
+    _speed = widget.speed;
   }
   
-  Color _parseColor(String hexColor) {
-    try {
-      hexColor = hexColor.replaceAll('#', '');
-      return Color(int.parse('FF$hexColor', radix: 16));
-    } catch (_) {
-      return Colors.black;
+  @override
+  void didUpdateWidget(_FloatingTimeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _virtualTime = widget.virtualTime;
+    _speed = widget.speed;
+  }
+  
+  Color _getSpeedColor() {
+    if (_speed > 1.5) {
+      return const Color(0xFF667EEA);
+    } else if (_speed < 0.8) {
+      return const Color(0xFFF5576C);
     }
+    return Colors.grey;
   }
   
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _parseColor(_bgColor).withOpacity(_opacity),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        _virtualTime,
-        style: TextStyle(
-          color: _parseColor(_textColor),
-          fontSize: _fontSize,
-          fontWeight: FontWeight.bold,
-          fontFeatures: const [FontFeature.tabularFigures()],
+    return Positioned(
+      left: _position.dx,
+      top: _position.dy,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            _position = Offset(
+              _position.dx + details.delta.dx,
+              _position.dy + details.delta.dy,
+            );
+            widget.onPositionChanged(_position);
+          });
+        },
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _getSpeedColor(),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _virtualTime,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getSpeedColor().withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${_speed.toStringAsFixed(1)}x',
+                    style: TextStyle(
+                      color: _getSpeedColor(),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+class TimeOverlayWrapper extends StatefulWidget {
+  final Widget child;
+  
+  const TimeOverlayWrapper({super.key, required this.child});
+  
+  @override
+  State<TimeOverlayWrapper> createState() => _TimeOverlayWrapperState();
+}
+
+class _TimeOverlayWrapperState extends State<TimeOverlayWrapper> {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (OverlayService.isRunning)
+          ListenableBuilder(
+            listenable: _OverlayNotifier.instance,
+            builder: (context, child) {
+              return _FloatingTimeWidget(
+                initialPosition: const Offset(10, 80),
+                virtualTime: OverlayService.virtualTime,
+                speed: OverlayService.speed,
+                onPositionChanged: (_) {},
+                onUpdateTime: (_, __) {},
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _OverlayNotifier extends ChangeNotifier {
+  static final _OverlayNotifier instance = _OverlayNotifier._();
+  _OverlayNotifier._();
+  
+  void notify() => notifyListeners();
 }
