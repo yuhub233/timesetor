@@ -30,31 +30,9 @@ jobs:
         channel: 'stable'
         cache: true
     
-    - name: Prepare Flutter project
+    - name: Get Flutter dependencies
       working-directory: android
-      run: |
-        cp pubspec.yaml ../pubspec.yaml.bak
-        cp -r lib ../lib.bak
-        cp -r android/app/src/main ../android_main_bak
-        cp android/app/build.gradle ../app_build.gradle.bak
-        cp android/build.gradle ../root_build.gradle.bak
-        cp android/gradle.properties ../gradle.properties.bak
-        cd ..
-        rm -rf android
-        flutter create --org com.timesetor --project-name timesetor android
-        cd android
-        cp ../pubspec.yaml.bak pubspec.yaml
-        rm -rf lib
-        cp -r ../lib.bak lib
-        flutter pub get
-    
-    - name: Apply custom Android configuration
-      working-directory: android
-      run: |
-        cp -r ../android_main_bak/* android/app/src/main/
-        cp ../app_build.gradle.bak android/app/build.gradle
-        cp ../root_build.gradle.bak android/build.gradle
-        cp ../gradle.properties.bak android/gradle.properties
+      run: flutter pub get
     
     - name: Build APK
       working-directory: android
@@ -66,7 +44,7 @@ jobs:
         name: timesetor-apk
         path: android/build/app/outputs/flutter-apk/app-release.apk
         retention-days: 30
-  
+    
   release:
     needs: build
     runs-on: ubuntu-latest

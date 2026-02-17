@@ -56,6 +56,7 @@ class TimeSetorApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'TimeSetor',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
           primarySwatch: Colors.indigo,
