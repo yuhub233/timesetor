@@ -14,8 +14,19 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ApiService.initialize();
-  await NotificationService.initialize();
+  
+  try {
+    await ApiService.initialize();
+  } catch (e) {
+    debugPrint('ApiService initialize error: $e');
+  }
+  
+  try {
+    await NotificationService.initialize();
+  } catch (e) {
+    debugPrint('NotificationService initialize error: $e');
+  }
+  
   runApp(const TimeSetorApp());
 }
 
