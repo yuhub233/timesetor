@@ -30,14 +30,19 @@ jobs:
         channel: 'stable'
         cache: true
     
-    - name: Clean up and recreate Android project
+    - name: Prepare Flutter project
       working-directory: android
       run: |
-        if [ -d "android" ]; then
-          rm -rf android
-          echo "Removed incorrect nested android directory"
-        fi
-        flutter create . --platforms=android
+        rm -rf android
+        cp pubspec.yaml ../pubspec.yaml.bak
+        cp -r lib ../lib.bak
+        cd ..
+        rm -rf android
+        flutter create --org com.timesetor --project-name timesetor android
+        cd android
+        cp ../pubspec.yaml.bak pubspec.yaml
+        rm -rf lib
+        cp -r ../lib.bak lib
         flutter pub get
     
     - name: Build APK
