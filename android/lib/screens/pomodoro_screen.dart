@@ -38,7 +38,7 @@ class _PomodoroScreenState extends State<PomodoroScreen> {
   String _formatTime(int seconds) {
     final mins = seconds ~/ 60;
     final secs = seconds % 60;
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padStart(2, '0')}';
+    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
   
   Future<void> _startTimer() async {
