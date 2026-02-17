@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vue/Web
+web/dist/
+web/.vite/
+
+# Flutter/Dart
+android/.dart_tool/
+android/.packages
+android/.pub/
+android/.flutter-plugins
+android/.flutter-plugins-dependencies
+android/build/
+android/pubspec.lock
+android/.flutter_build_cache/
+android/.flutter_tool_state
+
+# Android
+android/android/.gradle/
+android/android/app/build/
+android/android/build/
+android/android/captures/
+android/android/local.properties
+android/android/gradle.properties
+android/android/.externalNativeBuild/
+android/android/.cxx/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Config overrides
+config.local.yaml
