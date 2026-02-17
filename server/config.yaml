@@ -1,0 +1,65 @@
+server:
+  host: "0.0.0.0"
+  port: 5000
+  external_url: ""
+
+time:
+  initial_wake_time: "12:00"
+  initial_sleep_time: "05:00"
+  target_wake_time: "08:00"
+  target_sleep_time: "23:00"
+  target_entertainment_hours: 2.0
+  target_study_hours: 4.0
+  
+  time_approach_rate: 0.1
+  
+  normal_speed: 1.0
+  rest_speed: 0.5
+  entertainment_base_speed: 2.0
+  
+  study_start_speed: 5.0
+  study_end_speed: 0.3
+  study_curve_type: "linear"
+
+pomodoro:
+  work_duration: 25
+  short_break: 5
+  long_break: 15
+  long_break_interval: 4
+
+ai:
+  enabled: true
+  api_url: ""
+  api_key: ""
+  model: "gpt-3.5-turbo"
+  daily_summary_prompt: "请根据以下数据生成一份简洁的每日总结："
+  weekly_summary_prompt: "请根据以下周数据生成周总结："
+  monthly_summary_prompt: "请根据以下月数据生成月总结："
+  yearly_summary_prompt: "请根据以下年数据生成年总结："
+
+security:
+  encryption_salt: "timesetor_secret_salt_2024"
+  token_expiry_hours: 24
+
+android:
+  entertainment_apps:
+    - "com.tencent.mm"
+    - "com.tencent.mobileqq"
+    - "com.ss.android.ugc.aweme"
+    - "com.smile.gifmaker"
+    - "com.jingdong.app.mall"
+    - "com.taobao.taobao"
+    - "com.sina.weibo"
+    - "com.zhihu.android"
+    - "com.bilibili"
+    - "com.netease.cloudmusic"
+  study_apps: []
+
+display:
+  float_window:
+    default_opacity: 1.0
+    default_font_size: 24
+    default_bg_color: "#000000"
+    default_text_color: "#FFFFFF"
+    default_position_x: 0
+    default_position_y: 0
