@@ -30,6 +30,14 @@ jobs:
         channel: 'stable'
         cache: true
     
+    - name: Clean up incorrect android directory
+      working-directory: android
+      run: |
+        if [ -d "android" ]; then
+          rm -rf android
+          echo "Removed incorrect nested android directory"
+        fi
+    
     - name: Get dependencies
       working-directory: android
       run: flutter pub get
@@ -44,7 +52,7 @@ jobs:
         name: timesetor-apk
         path: android/build/app/outputs/flutter-apk/app-release.apk
         retention-days: 30
-    
+  
   release:
     needs: build
     runs-on: ubuntu-latest
