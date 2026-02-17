@@ -30,17 +30,15 @@ jobs:
         channel: 'stable'
         cache: true
     
-    - name: Clean up incorrect android directory
+    - name: Clean up and recreate Android project
       working-directory: android
       run: |
         if [ -d "android" ]; then
           rm -rf android
           echo "Removed incorrect nested android directory"
         fi
-    
-    - name: Get dependencies
-      working-directory: android
-      run: flutter pub get
+        flutter create . --platforms=android
+        flutter pub get
     
     - name: Build APK
       working-directory: android
