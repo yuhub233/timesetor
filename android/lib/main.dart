@@ -7,12 +7,14 @@ import 'providers/settings_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
+import 'services/api_service.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.initialize();
   await NotificationService.initialize();
   runApp(const TimeSetorApp());
 }
@@ -24,7 +26,7 @@ class TimeSetorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
         ChangeNotifierProvider(create: (_) => TimeProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
