@@ -16,10 +16,12 @@ time:
   normal_speed: 1.0
   rest_speed: 0.5
   entertainment_base_speed: 2.0
+  break_speed: 1.0
   
   study_start_speed: 5.0
   study_end_speed: 0.3
   study_curve_type: "linear"
+  study_transition_minutes: 60
 
 pomodoro:
   work_duration: 25
