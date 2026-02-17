@@ -268,6 +268,202 @@ def get_recent_daily_records(user_id: int, days: int = 7) -> List[Dict]:
     finally:
         conn.close()
 
+def add_time_log(user_id: int, daily_record_id: int, real_timestamp: datetime,
+                 activity_type: str, speed_multiplier: float = 1.0,
+                 duration_seconds: int = 0, app_name: str = None,
+                 virtual_timestamp: datetime = None, virtual_time_display: str = None,
+                 notes: str = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO time_logs 
+               (user_id, daily_record_id, real_timestamp, virtual_timestamp, 
+                virtual_time_display, activity_type, speed_multiplier, 
+                duration_seconds, app_name, notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, daily_record_id, real_timestamp, virtual_timestamp,
+             virtual_time_display, activity_type, speed_multiplier,
+             duration_seconds, app_name, notes)
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+def get_time_logs(user_id: int, record_date: date) -> List[Dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT tl.* FROM time_logs tl
+               JOIN daily_records dr ON tl.daily_record_id = dr.id
+               WHERE tl.user_id = ? AND dr.date = ?
+               ORDER BY tl.real_timestamp""",
+            (user_id, record_date.isoformat())
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+def add_pomodoro_session(user_id: int, daily_record_id: int,
+                         start_time: datetime, planned_duration: int,
+                         session_type: str = 'work',
+                         virtual_start_time: datetime = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO pomodoro_sessions 
+               (user_id, daily_record_id, start_time, planned_duration_minutes,
+                session_type, virtual_start_time)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (user_id, daily_record_id, start_time, planned_duration,
+             session_type, virtual_start_time)
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+def update_pomodoro_session(session_id: int, **kwargs) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        set_clauses = []
+        values = []
+        for key, value in kwargs.items():
+            set_clauses.append(f"{key} = ?")
+            values.append(value)
+        
+        if not set_clauses:
+            return False
+        
+        values.append(session_id)
+        query = f"UPDATE pomodoro_sessions SET {', '.join(set_clauses)} WHERE id = ?"
+        cursor.execute(query, values)
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+def get_pomodoro_sessions(user_id: int, record_date: date) -> List[Dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT ps.* FROM pomodoro_sessions ps
+               JOIN daily_records dr ON ps.daily_record_id = dr.id
+               WHERE ps.user_id = ? AND dr.date = ?
+               ORDER BY ps.start_time""",
+            (user_id, record_date.isoformat())
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+def add_ai_summary(user_id: int, summary_type: str, period_start: date,
+                   period_end: date, summary_text: str, source_data: Dict = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO ai_summaries 
+               (user_id, summary_type, period_start, period_end, summary_text, source_data)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (user_id, summary_type, period_start.isoformat(), period_end.isoformat(),
+             summary_text, json.dumps(source_data) if source_data else None)
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+def get_ai_summaries(user_id: int, summary_type: str = None, limit: int = 10) -> List[Dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        if summary_type:
+            cursor.execute(
+                """SELECT * FROM ai_summaries 
+                   WHERE user_id = ? AND summary_type = ?
+                   ORDER BY created_at DESC LIMIT ?""",
+                (user_id, summary_type, limit)
+            )
+        else:
+            cursor.execute(
+                """SELECT * FROM ai_summaries 
+                   WHERE user_id = ?
+                   ORDER BY created_at DESC LIMIT ?""",
+                (user_id, limit)
+            )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+def register_device(user_id: int, device_id: str, device_name: str = None,
+                    device_type: str = None) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO devices (user_id, device_id, device_name, device_type, last_active)
+               VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+               ON CONFLICT(user_id, device_id) 
+               DO UPDATE SET last_active = CURRENT_TIMESTAMP""",
+            (user_id, device_id, device_name, device_type)
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def get_user_devices(user_id: int) -> List[Dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT * FROM devices WHERE user_id = ? ORDER BY last_active DESC",
+            (user_id,)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+def add_app_usage_log(user_id: int, device_id: str, app_package: str,
+                      start_time: datetime, activity_type: str,
+                      app_name: str = None, end_time: datetime = None,
+                      duration_seconds: int = 0) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """INSERT INTO app_usage_logs 
+               (user_id, device_id, app_package, app_name, start_time, end_time,
+                duration_seconds, activity_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, device_id, app_package, app_name, start_time, end_time,
+             duration_seconds, activity_type)
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+def get_app_usage_logs(user_id: int, record_date: date) -> List[Dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """SELECT * FROM app_usage_logs 
+               WHERE user_id = ? AND DATE(start_time) = ?
+               ORDER BY start_time""",
+            (user_id, record_date.isoformat())
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
 def get_yesterday_sleep_time(user_id: int) -> Optional[datetime]:
     conn = get_connection()
     cursor = conn.cursor()
