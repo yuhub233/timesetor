@@ -33,9 +33,10 @@ jobs:
     - name: Prepare Flutter project
       working-directory: android
       run: |
-        rm -rf android
         cp pubspec.yaml ../pubspec.yaml.bak
         cp -r lib ../lib.bak
+        cp -r android/app/src/main ../android_main_bak
+        cp android/app/build.gradle ../build.gradle.bak
         cd ..
         rm -rf android
         flutter create --org com.timesetor --project-name timesetor android
@@ -45,24 +46,11 @@ jobs:
         cp -r ../lib.bak lib
         flutter pub get
     
-    - name: Configure Android permissions
+    - name: Apply custom Android configuration
       working-directory: android
       run: |
-        ANDROID_MANIFEST=android/app/src/main/AndroidManifest.xml
-        sed -i 's/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">\n    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"\/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"\/>\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"\/>\n    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"\/>/' $ANDROID_MANIFEST
-        sed -i 's/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android" xmlns:tools="http:\/\/schemas.android.com\/tools">/' $ANDROID_MANIFEST
-        sed -i 's/android:label="timesetor"/android:label="TimeSetor"\n        android:usesCleartextTraffic="true"\n        android:networkSecurityConfig="@xml\/network_security_config"\n        <service android:name="de.julianassmann.flutter_background.IsolateHolderService" android:exported="false" android:foregroundServiceType="specialUse"\/>/' $ANDROID_MANIFEST
-        mkdir -p android/app/src/main/res/xml
-        cat > android/app/src/main/res/xml/network_security_config.xml << 'EOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <network-security-config>
-            <base-config cleartextTrafficPermitted="true">
-                <trust-anchors>
-                    <certificates src="system" />
-                </trust-anchors>
-            </base-config>
-        </network-security-config>
-        EOF
+        cp -r ../android_main_bak/* android/app/src/main/
+        cp ../build.gradle.bak android/app/build.gradle
     
     - name: Build APK
       working-directory: android
