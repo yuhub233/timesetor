@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static String _baseUrl = 'http://localhost:5000/api';
@@ -11,36 +11,44 @@ class ApiService {
   static bool _useInternal = true;
   
   static Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('token');
-    _internalUrl = prefs.getString('internalServerUrl');
-    _externalUrl = prefs.getString('externalServerUrl');
-    
-    final savedUrl = prefs.getString('serverUrl');
-    if (savedUrl != null && savedUrl.isNotEmpty) {
-      _baseUrl = savedUrl;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString('token');
+      _internalUrl = prefs.getString('internalServerUrl');
+      _externalUrl = prefs.getString('externalServerUrl');
+      
+      final savedUrl = prefs.getString('serverUrl');
+      if (savedUrl != null && savedUrl.isNotEmpty) {
+        _baseUrl = savedUrl;
+      }
+      
+      _useInternal = prefs.getBool('useInternal') ?? true;
+      
+      await _detectNetworkAndSwitch();
+    } catch (e) {
+      debugPrint('ApiService initialize error: $e');
     }
-    
-    _useInternal = prefs.getBool('useInternal') ?? true;
-    
-    await _detectNetworkAndSwitch();
   }
   
   static Future<void> _detectNetworkAndSwitch() async {
-    if (_internalUrl == null || _internalUrl!.isEmpty) return;
-    if (_externalUrl == null || _externalUrl!.isEmpty) return;
-    
-    bool isInternal = await _checkInternalNetwork();
-    
-    if (isInternal && _useInternal) {
-      _baseUrl = _internalUrl!;
-    } else {
-      _baseUrl = _externalUrl!;
+    try {
+      if (_internalUrl == null || _internalUrl!.isEmpty) return;
+      if (_externalUrl == null || _externalUrl!.isEmpty) return;
+      
+      bool isInternal = await _checkInternalNetwork();
+      
+      if (isInternal && _useInternal) {
+        _baseUrl = _internalUrl!;
+      } else {
+        _baseUrl = _externalUrl!;
+      }
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('serverUrl', _baseUrl);
+      await prefs.setBool('useInternal', isInternal);
+    } catch (e) {
+      debugPrint('Network detection error: $e');
     }
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('serverUrl', _baseUrl);
-    await prefs.setBool('useInternal', isInternal);
   }
   
   static Future<bool> _checkInternalNetwork() async {
@@ -52,7 +60,8 @@ class ApiService {
         Uri.parse(testUrl),
       ).timeout(const Duration(seconds: 3));
       return response.statusCode == 200;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Internal network check failed: $e');
       return false;
     }
   }
@@ -71,7 +80,8 @@ class ApiService {
         Uri.parse('$testUrl/health'),
       ).timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Connection test failed: $e');
       return false;
     }
   }
