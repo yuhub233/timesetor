@@ -50,7 +50,7 @@ class AuthProvider extends ChangeNotifier {
     } on ApiException catch (e) {
       return {'success': false, 'error': e.message};
     } catch (e) {
-      return {'success': false, 'error': '登录失败'};
+      return {'success': false, 'error': '登录失败: $e'};
     }
   }
   
@@ -69,7 +69,7 @@ class AuthProvider extends ChangeNotifier {
     } on ApiException catch (e) {
       return {'success': false, 'error': e.message};
     } catch (e) {
-      return {'success': false, 'error': '注册失败'};
+      return {'success': false, 'error': '注册失败: $e'};
     }
   }
   
