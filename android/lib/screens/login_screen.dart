@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,14 +12,23 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _serverUrlController = TextEditingController();
   bool _isRegister = false;
   bool _isLoading = false;
+  bool _showServerConfig = false;
   String? _error;
+  
+  @override
+  void initState() {
+    super.initState();
+    _serverUrlController.text = ApiService.baseUrl.replaceAll('/api', '');
+  }
   
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _serverUrlController.dispose();
     super.dispose();
   }
   
@@ -34,6 +44,20 @@ class _LoginScreenState extends State<LoginScreen> {
         : await authProvider.login(_usernameController.text, _passwordController.text);
     setState(() => _isLoading = false);
     if (!result['success']) setState(() => _error = result['error']);
+  }
+  
+  Future<void> _saveServerUrl() async {
+    final url = _serverUrlController.text.trim();
+    if (url.isEmpty) {
+      setState(() => _error = '请输入服务器地址');
+      return;
+    }
+    await ApiService.setServerUrl(url);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('服务器地址已保存: ${ApiService.baseUrl}')),
+      );
+    }
   }
   
   @override
@@ -52,10 +76,61 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('TimeSetor', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF667EEA))),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('TimeSetor', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF667EEA))),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(_showServerConfig ? Icons.close : Icons.settings, color: Colors.grey[400], size: 20),
+                          onPressed: () => setState(() => _showServerConfig = !_showServerConfig),
+                          tooltip: '服务器设置',
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Text('不常规时间管理系统', style: TextStyle(color: Colors.grey[400], fontSize: 14)),
-                    const SizedBox(height: 32),
+                    if (_showServerConfig) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('服务器配置', style: TextStyle(color: Colors.grey[300], fontSize: 12, fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _serverUrlController,
+                              decoration: const InputDecoration(
+                                labelText: '服务器地址',
+                                hintText: '例如: http://192.168.1.100:5000',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _saveServerUrl,
+                                icon: const Icon(Icons.save, size: 16),
+                                label: const Text('保存服务器地址'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF667EEA),
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
                     TextField(controller: _usernameController, decoration: const InputDecoration(labelText: '用户名', border: OutlineInputBorder())),
                     const SizedBox(height: 16),
                     TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: '密码', border: OutlineInputBorder())),
