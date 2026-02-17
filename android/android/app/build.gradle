@@ -23,8 +23,8 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.timesetor"
-    compileSdk flutter.compileSdkVersion
+    namespace "com.timesetor"
+    compileSdk 34
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.timesetor"
+        applicationId "com.timesetor"
         minSdk 21
         targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
