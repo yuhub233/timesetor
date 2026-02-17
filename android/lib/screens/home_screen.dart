@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/time_provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/overlay_service.dart';
 import 'pomodoro_screen.dart';
 import 'data_screen.dart';
 import 'settings_screen.dart';
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  bool _overlayEnabled = false;
   
   final List<Widget> _screens = const [
     TimeDisplayScreen(),
@@ -27,9 +29,32 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _checkOverlay();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TimeProvider>().fetchCurrentTime();
     });
+  }
+  
+  Future<void> _checkOverlay() async {
+    final enabled = await OverlayService.isRunning;
+    setState(() => _overlayEnabled = enabled);
+  }
+  
+  Future<void> _toggleOverlay() async {
+    if (!_overlayEnabled) {
+      final hasPermission = await OverlayService.hasPermission();
+      if (!hasPermission) {
+        await OverlayService.requestPermission();
+      }
+      final timeProvider = context.read<TimeProvider>();
+      await OverlayService.showOverlay(
+        virtualTime: timeProvider.virtualTime,
+        speed: timeProvider.currentSpeed,
+      );
+    } else {
+      await OverlayService.hideOverlay();
+    }
+    setState(() => _overlayEnabled = !_overlayEnabled);
   }
   
   @override
@@ -174,11 +199,6 @@ class TimeDisplayScreen extends StatelessWidget {
                       _buildActivityIndicator(timeProvider.currentActivity),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '真实时间: ${_formatRealTime(timeProvider.realTime)}',
-                    style: TextStyle(color: Colors.grey[400]),
-                  ),
                 ],
               ),
             ),
@@ -315,12 +335,14 @@ class TimeDisplayScreen extends StatelessWidget {
       'rest': '休息中',
       'entertainment': '娱乐中',
       'study': '学习中',
+      'pomodoro_break': '番茄钟休息',
     };
     
     final colors = {
       'rest': const Color(0xFF4ADE80),
       'entertainment': const Color(0xFFF5576C),
       'study': const Color(0xFF667EEA),
+      'pomodoro_break': const Color(0xFF4ADE80),
     };
     
     return Row(
@@ -356,15 +378,5 @@ class TimeDisplayScreen extends StatelessWidget {
       ),
       child: Text(label),
     );
-  }
-  
-  String _formatRealTime(String? isoString) {
-    if (isoString == null || isoString.isEmpty) return '--:--';
-    try {
-      final dateTime = DateTime.parse(isoString);
-      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return '--:--';
-    }
   }
 }
