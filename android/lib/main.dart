@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,7 +9,6 @@ import 'providers/settings_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
-import 'services/api_service.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -15,11 +16,17 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  try {
-    await ApiService.initialize();
-  } catch (e) {
-    debugPrint('ApiService initialize error: $e');
-  }
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter Error: ${details.exception}');
+    debugPrint('Stack trace: ${details.stack}');
+  };
+  
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Platform Error: $error');
+    debugPrint('Stack trace: $stack');
+    return true;
+  };
   
   try {
     await NotificationService.initialize();
@@ -27,7 +34,13 @@ void main() async {
     debugPrint('NotificationService initialize error: $e');
   }
   
-  runApp(const TimeSetorApp());
+  runZonedGuarded(
+    () => runApp(const TimeSetorApp()),
+    (error, stack) {
+      debugPrint('Uncaught error: $error');
+      debugPrint('Stack trace: $stack');
+    },
+  );
 }
 
 class TimeSetorApp extends StatelessWidget {
@@ -37,7 +50,7 @@ class TimeSetorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TimeProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
@@ -48,11 +61,17 @@ class TimeSetorApp extends StatelessWidget {
           primarySwatch: Colors.indigo,
           scaffoldBackgroundColor: const Color(0xFF0F0F1A),
           cardColor: const Color(0xFF1A1A2E),
-          appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1A1A2E), elevation: 0),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1A1A2E),
+            elevation: 0,
+          ),
         ),
         home: Consumer<AuthProvider>(
           builder: (context, auth, _) {
-            return auth.isLoggedIn ? const HomeScreen() : const LoginScreen();
+            if (auth.isLoggedIn) {
+              return const HomeScreen();
+            }
+            return const LoginScreen();
           },
         ),
         routes: {
