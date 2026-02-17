@@ -24,6 +24,20 @@ class ApiService {
     await prefs.remove('token');
   }
   
+  static Future<void> setServerUrl(String url) async {
+    if (!url.endsWith('/api')) {
+      if (url.endsWith('/')) {
+        url = '${url}api';
+      } else {
+        url = '$url/api';
+      }
+    }
+    _baseUrl = url;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('serverUrl', url);
+  }
+  
+  static String get baseUrl => _baseUrl;
   static String? get token => _token;
   
   static Map<String, String> _headers({Map<String, String>? extra}) {
