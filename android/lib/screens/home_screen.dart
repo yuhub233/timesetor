@@ -40,23 +40,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   Future<void> _checkOverlay() async {
-    final enabled = await OverlayService.isRunning;
+    final enabled = OverlayService.isRunning;
     setState(() => _overlayEnabled = enabled);
   }
   
-  Future<void> _toggleOverlay() async {
+  void _toggleOverlay() {
+    final timeProvider = context.read<TimeProvider>();
     if (!_overlayEnabled) {
-      final hasPermission = await OverlayService.hasPermission();
-      if (!hasPermission) {
-        await OverlayService.requestPermission();
-      }
-      final timeProvider = context.read<TimeProvider>();
-      await OverlayService.showOverlay(
+      OverlayService.showOverlay(
         virtualTime: timeProvider.virtualTime,
         speed: timeProvider.currentSpeed,
       );
     } else {
-      await OverlayService.hideOverlay();
+      OverlayService.hideOverlay();
     }
     setState(() => _overlayEnabled = !_overlayEnabled);
   }
@@ -64,7 +60,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          if (_overlayEnabled && _currentIndex != 0)
+            Positioned(
+              top: 60,
+              right: 16,
+              child: _buildFloatingTime(),
+            ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
@@ -91,6 +97,76 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+  
+  Widget _buildFloatingTime() {
+    return Consumer<TimeProvider>(
+      builder: (context, timeProvider, _) {
+        return GestureDetector(
+          onTap: () => setState(() => _currentIndex = 0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: timeProvider.currentSpeed > 1.5 
+                    ? const Color(0xFF667EEA) 
+                    : timeProvider.currentSpeed < 0.8 
+                        ? const Color(0xFFF5576C) 
+                        : Colors.grey,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  timeProvider.virtualTime,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (timeProvider.currentSpeed > 1.5 
+                        ? const Color(0xFF667EEA) 
+                        : timeProvider.currentSpeed < 0.8 
+                            ? const Color(0xFFF5576C) 
+                            : Colors.grey).withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${timeProvider.currentSpeed.toStringAsFixed(1)}x',
+                    style: TextStyle(
+                      color: timeProvider.currentSpeed > 1.5 
+                          ? const Color(0xFF667EEA) 
+                          : timeProvider.currentSpeed < 0.8 
+                              ? const Color(0xFFF5576C) 
+                              : Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
