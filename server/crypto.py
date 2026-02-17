@@ -28,9 +28,11 @@ def unpad_data(data: bytes) -> bytes:
 def encrypt(data: str, key: bytes) -> str:
     iv = os.urandom(16)
     padded_data = pad_data(data.encode('utf-8'))
+    
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
     encryptor = cipher.encryptor()
     encrypted = encryptor.update(padded_data) + encryptor.finalize()
+    
     result = base64.b64encode(iv + encrypted).decode('utf-8')
     return result
 
@@ -38,9 +40,11 @@ def decrypt(encrypted_data: str, key: bytes) -> str:
     raw_data = base64.b64decode(encrypted_data.encode('utf-8'))
     iv = raw_data[:16]
     encrypted = raw_data[16:]
+    
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
     decryptor = cipher.decryptor()
     decrypted = decryptor.update(encrypted) + decryptor.finalize()
+    
     unpadded = unpad_data(decrypted)
     return unpadded.decode('utf-8')
 
@@ -71,9 +75,11 @@ def verify_token(token: str, key: bytes, expiry_hours: int = 24) -> int:
         token_data = decrypt_json(token, key)
         user_id = token_data['user_id']
         timestamp = datetime.fromisoformat(token_data['timestamp'])
+        
         elapsed = datetime.now() - timestamp
         if elapsed.total_seconds() > expiry_hours * 3600:
             return None
+        
         return user_id
     except Exception:
         return None
