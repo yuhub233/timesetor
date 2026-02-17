@@ -7,7 +7,7 @@ class NotificationService {
   static const channelName = 'TimeSetor Time Display';
   
   static Future<void> initialize() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('ic_launcher');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     await _notifications.initialize(settings);
