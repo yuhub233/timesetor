@@ -36,7 +36,9 @@ jobs:
         cp pubspec.yaml ../pubspec.yaml.bak
         cp -r lib ../lib.bak
         cp -r android/app/src/main ../android_main_bak
-        cp android/app/build.gradle ../build.gradle.bak
+        cp android/app/build.gradle ../app_build.gradle.bak
+        cp android/build.gradle ../root_build.gradle.bak
+        cp android/gradle.properties ../gradle.properties.bak
         cd ..
         rm -rf android
         flutter create --org com.timesetor --project-name timesetor android
@@ -50,7 +52,9 @@ jobs:
       working-directory: android
       run: |
         cp -r ../android_main_bak/* android/app/src/main/
-        cp ../build.gradle.bak android/app/build.gradle
+        cp ../app_build.gradle.bak android/app/build.gradle
+        cp ../root_build.gradle.bak android/build.gradle
+        cp ../gradle.properties.bak android/gradle.properties
     
     - name: Build APK
       working-directory: android
