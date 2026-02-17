@@ -45,6 +45,24 @@ jobs:
         cp -r ../lib.bak lib
         flutter pub get
     
+    - name: Configure Android permissions
+      working-directory: android
+      run: |
+        ANDROID_MANIFEST=android/app/src/main/AndroidManifest.xml
+        sed -i 's/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">/<manifest xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android">\n    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"\/>\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"\/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>/' $ANDROID_MANIFEST
+        sed -i 's/android:label="timesetor"/android:label="TimeSetor"\n        android:usesCleartextTraffic="true"\n        android:networkSecurityConfig="@xml\/network_security_config"/' $ANDROID_MANIFEST
+        mkdir -p android/app/src/main/res/xml
+        cat > android/app/src/main/res/xml/network_security_config.xml << 'EOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <network-security-config>
+            <base-config cleartextTrafficPermitted="true">
+                <trust-anchors>
+                    <certificates src="system" />
+                </trust-anchors>
+            </base-config>
+        </network-security-config>
+        EOF
+    
     - name: Build APK
       working-directory: android
       run: flutter build apk --release
