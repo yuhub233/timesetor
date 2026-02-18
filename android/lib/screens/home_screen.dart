@@ -159,14 +159,11 @@ class TimeDisplayScreen extends StatelessWidget {
                 children: [
                   Text(
                     timeProvider.virtualTime,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 72,
                       fontWeight: FontWeight.bold,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      foreground: Paint()
-                        ..shader = const LinearGradient(
-                          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                        ).createShader(const Rect.fromLTWH(0, 0, 400, 100)),
+                      fontFeatures: [FontFeature.tabularFigures()],
+                      color: Color(0xFF667EEA),
                     ),
                   ),
                   const SizedBox(height: 16),
