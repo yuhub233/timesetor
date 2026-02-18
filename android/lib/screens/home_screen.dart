@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/time_provider.dart';
 import '../providers/auth_provider.dart';
-import '../services/overlay_service.dart';
 import 'pomodoro_screen.dart';
 import 'data_screen.dart';
 import 'settings_screen.dart';
@@ -17,7 +16,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  bool _overlayEnabled = false;
   
   final List<Widget> _screens = const [
     TimeDisplayScreen(),
@@ -29,7 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _checkOverlay();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final timeProvider = context.read<TimeProvider>();
       await timeProvider.fetchCurrentTime();
@@ -39,38 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
   
-  Future<void> _checkOverlay() async {
-    final enabled = OverlayService.isRunning;
-    setState(() => _overlayEnabled = enabled);
-  }
-  
-  void _toggleOverlay() {
-    final timeProvider = context.read<TimeProvider>();
-    if (!_overlayEnabled) {
-      OverlayService.showOverlay(
-        virtualTime: timeProvider.virtualTime,
-        speed: timeProvider.currentSpeed,
-      );
-    } else {
-      OverlayService.hideOverlay();
-    }
-    setState(() => _overlayEnabled = !_overlayEnabled);
-  }
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          _screens[_currentIndex],
-          if (_overlayEnabled && _currentIndex != 0)
-            Positioned(
-              top: 60,
-              right: 16,
-              child: _buildFloatingTime(),
-            ),
-        ],
-      ),
+      body: _screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
@@ -97,76 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-  
-  Widget _buildFloatingTime() {
-    return Consumer<TimeProvider>(
-      builder: (context, timeProvider, _) {
-        return GestureDetector(
-          onTap: () => setState(() => _currentIndex = 0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.85),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: timeProvider.currentSpeed > 1.5 
-                    ? const Color(0xFF667EEA) 
-                    : timeProvider.currentSpeed < 0.8 
-                        ? const Color(0xFFF5576C) 
-                        : Colors.grey,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  timeProvider.virtualTime,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: (timeProvider.currentSpeed > 1.5 
-                        ? const Color(0xFF667EEA) 
-                        : timeProvider.currentSpeed < 0.8 
-                            ? const Color(0xFFF5576C) 
-                            : Colors.grey).withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${timeProvider.currentSpeed.toStringAsFixed(1)}x',
-                    style: TextStyle(
-                      color: timeProvider.currentSpeed > 1.5 
-                          ? const Color(0xFF667EEA) 
-                          : timeProvider.currentSpeed < 0.8 
-                              ? const Color(0xFFF5576C) 
-                              : Colors.grey,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -260,10 +159,10 @@ class TimeDisplayScreen extends StatelessWidget {
                 children: [
                   Text(
                     timeProvider.virtualTime,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 72,
                       fontWeight: FontWeight.bold,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                      fontFeatures: [FontFeature.tabularFigures()],
                       foreground: Paint()
                         ..shader = const LinearGradient(
                           colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
@@ -278,6 +177,11 @@ class TimeDisplayScreen extends StatelessWidget {
                       const SizedBox(width: 16),
                       _buildActivityIndicator(timeProvider.currentActivity),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '真实时间: ${_formatRealTime(timeProvider.realTime)}',
+                    style: TextStyle(color: Colors.grey[400]),
                   ),
                 ],
               ),
@@ -415,14 +319,12 @@ class TimeDisplayScreen extends StatelessWidget {
       'rest': '休息中',
       'entertainment': '娱乐中',
       'study': '学习中',
-      'pomodoro_break': '番茄钟休息',
     };
     
     final colors = {
       'rest': const Color(0xFF4ADE80),
       'entertainment': const Color(0xFFF5576C),
       'study': const Color(0xFF667EEA),
-      'pomodoro_break': const Color(0xFF4ADE80),
     };
     
     return Row(
@@ -458,5 +360,15 @@ class TimeDisplayScreen extends StatelessWidget {
       ),
       child: Text(label),
     );
+  }
+  
+  String _formatRealTime(String? isoString) {
+    if (isoString == null || isoString.isEmpty) return '--:--';
+    try {
+      final dateTime = DateTime.parse(isoString);
+      return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '--:--';
+    }
   }
 }
