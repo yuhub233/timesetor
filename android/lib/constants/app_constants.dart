@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class AppConstants {
   static const String defaultServerUrl = 'http://localhost:5000/api';
   

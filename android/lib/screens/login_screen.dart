@@ -110,11 +110,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 32),
                     TextField(
                       controller: _serverController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '服务器地址',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
-                          icon: Icon(Icons.check_circle_outline),
+                          icon: const Icon(Icons.check_circle_outline),
                           onPressed: _testConnection,
                         ),
                       ),
@@ -161,9 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => setState(() => _isRegister = !_isRegister),
-                      child: Text(
-                        _isRegister ? '已有账号？登录' : '没有账号？注册'),
-                      ),
+                      child: Text(_isRegister ? '已有账号？登录' : '没有账号？注册'),
                     ),
                   ],
                 ),
