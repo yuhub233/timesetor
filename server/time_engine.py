@@ -88,19 +88,21 @@ def calculate_entertainment_multiplier(real_wake: datetime, expected_sleep: date
                                         target_entertainment_hours: float,
                                         target_study_hours: float) -> float:
     real_awake_seconds = (expected_sleep - real_wake).total_seconds()
-    real_awake_hours = real_awake_seconds / 3600
+    real_awake_minutes = real_awake_seconds / 60
     
     if yesterday_virtual_sleep:
-        virtual_awake_seconds = 24 * 3600
+        virtual_awake_seconds = 24 * 3600 - (virtual_wake - yesterday_virtual_sleep).total_seconds()
+        if virtual_awake_seconds < 0:
+            virtual_awake_seconds += 24 * 3600
     else:
         virtual_awake_seconds = 24 * 3600
-    virtual_awake_hours = virtual_awake_seconds / 3600
+    virtual_awake_minutes = virtual_awake_seconds / 60
     
     target_entertainment_minutes = target_entertainment_hours * 60
     target_study_minutes = target_study_hours * 60
     
-    virtual_rest_minutes = virtual_awake_hours * 60 - target_entertainment_minutes - target_study_minutes
-    real_rest_minutes = real_awake_hours * 60 - target_entertainment_minutes - target_study_minutes
+    virtual_rest_minutes = virtual_awake_minutes - target_entertainment_minutes - target_study_minutes
+    real_rest_minutes = real_awake_minutes - target_entertainment_minutes - target_study_minutes
     
     if virtual_rest_minutes <= 0:
         return 1.0
@@ -108,7 +110,7 @@ def calculate_entertainment_multiplier(real_wake: datetime, expected_sleep: date
     if real_rest_minutes <= 0:
         return 10.0
     
-    x = (virtual_rest_minutes / 2 - virtual_rest_minutes + target_entertainment_minutes) / target_entertainment_minutes
+    x = (2 * virtual_awake_minutes - target_study_minutes - real_awake_minutes + target_entertainment_minutes) / (2 * target_entertainment_minutes)
     
     x = max(0.5, min(10.0, x))
     
