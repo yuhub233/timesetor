@@ -1,6 +1,5 @@
 @echo off
-setlocal enabledelayedexpansion
-chcp 65001 >nul
+chcp 65001 >nul 2>&1
 title TimeSetor Web - Build
 
 echo ========================================
@@ -10,18 +9,18 @@ echo.
 
 cd /d "%~dp0"
 
-where node >nul 2>&1
+node --version >nul 2>&1
 if errorlevel 1 (
     echo ERROR: Node.js not found
     echo Please install Node.js from https://nodejs.org/
-    goto :error
+    goto :end
 )
 
-where npm >nul 2>&1
+npm --version >nul 2>&1
 if errorlevel 1 (
     echo ERROR: npm not found
     echo Please install Node.js from https://nodejs.org/
-    goto :error
+    goto :end
 )
 
 echo Checking Node.js version...
@@ -31,21 +30,24 @@ echo.
 
 if not exist "node_modules" (
     echo Installing dependencies...
-    npm install
+    call npm install
     if errorlevel 1 (
         echo ERROR: Failed to install dependencies
-        goto :error
+        goto :end
     )
     echo Dependencies installed successfully.
     echo.
 )
 
 echo Building production version...
-npm run build
+call npm run build
 
 if errorlevel 1 (
-    echo ERROR: Build failed
-    goto :error
+    echo.
+    echo ========================================
+    echo   Build failed!
+    echo ========================================
+    goto :end
 )
 
 echo.
@@ -56,19 +58,12 @@ echo.
 echo Output directory: dist/
 echo.
 echo To serve the built files, you can:
-echo   1. Use any static file server
-echo   2. Run: npx serve dist
-echo   3. Deploy to any static hosting service
-echo.
-
-goto :end
-
-:error
-echo.
-echo ========================================
-echo   Build failed!
-echo ========================================
+    echo   1. Use any static file server
+    echo   2. Run: npx serve dist
+    echo   3. Deploy to any static hosting service
 echo.
 
 :end
-pause
+echo.
+echo Press any key to exit...
+pause >nul
