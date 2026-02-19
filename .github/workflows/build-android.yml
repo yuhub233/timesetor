@@ -2,11 +2,19 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master, android-complete-refactor, complete-refactor ]
-  tags:
-    - 'v*'
+    branches:
+      - main
+      - master
+      - android-complete-refactor
+      - complete-refactor
+    tags:
+      - 'v*'
   pull_request:
-    branches: [ main, master, android-complete-refactor, complete-refactor ]
+    branches:
+      - main
+      - master
+      - android-complete-refactor
+      - complete-refactor
   workflow_dispatch:
 
 jobs:
